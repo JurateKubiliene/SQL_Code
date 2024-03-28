@@ -1,0 +1,27 @@
+  WITH
+  users__CTE AS
+    --validation tests:
+    -- 274,362 observations
+    -- 83467479.3712028999 NULL
+    -- 1526801.0560015811 2020-11-05 
+    -- 3567303.5078176443 2020-12-03
+   (
+  SELECT
+    user_pseudo_id,
+    DATE_TRUNC(subscription_start, WEEK) AS cohort,
+    DATE_TRUNC(subscription_end, WEEK) AS end_date
+  FROM  `turing_data_analytics.subscriptions`
+  )
+
+  SELECT 
+    cohort,
+    COUNT(user_pseudo_id) as cohort_population,
+    SUM(CASE WHEN end_date != cohort OR end_date IS NULL THEN 1 ELSE 0 END) as week_0,
+    IF (DATE_ADD(cohort, INTERVAL 1 WEEK)<'2021-02-07', SUM(CASE WHEN end_date > DATE_ADD(cohort, INTERVAL 1 WEEK) OR end_date IS NULL THEN 1 ELSE 0 END), NULL) as week_1,
+    IF (DATE_ADD(cohort, INTERVAL 2 WEEK)<'2021-02-07', SUM(CASE WHEN end_date > DATE_ADD(cohort, INTERVAL 2 WEEK) OR end_date IS NULL THEN 1 ELSE 0 END), NULL) as week_2,
+    IF (DATE_ADD(cohort, INTERVAL 3 WEEK)<'2021-02-07', SUM(CASE WHEN end_date > DATE_ADD(cohort, INTERVAL 3 WEEK) OR end_date IS NULL THEN 1 ELSE 0 END), NULL) as week_3,
+    IF (DATE_ADD(cohort, INTERVAL 4 WEEK)<'2021-02-07', SUM(CASE WHEN end_date > DATE_ADD(cohort, INTERVAL 4 WEEK) OR end_date IS NULL THEN 1 ELSE 0 END), NULL) as week_4,
+    IF (DATE_ADD(cohort, INTERVAL 5 WEEK)<'2021-02-07', SUM(CASE WHEN end_date > DATE_ADD(cohort, INTERVAL 5 WEEK) OR end_date IS NULL THEN 1 ELSE 0 END), NULL) as week_5,
+    IF (DATE_ADD(cohort, INTERVAL 6 WEEK)<'2021-02-07', SUM(CASE WHEN end_date > DATE_ADD(cohort, INTERVAL 6 WEEK) OR end_date IS NULL THEN 1 ELSE 0 END), NULL) as week_6
+  FROM users__CTE
+  GROUP BY cohort;
