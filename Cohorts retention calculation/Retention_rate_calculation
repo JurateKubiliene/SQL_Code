@@ -1,0 +1,22 @@
+  WITH
+  users__CTE AS
+   (
+    SELECT
+    user_pseudo_id,
+    DATE_TRUNC(subscription_start, WEEK) AS cohort,
+    DATE_TRUNC(subscription_end, WEEK) AS end_date
+  FROM  `turing_data_analytics.subscriptions`
+  )
+
+  SELECT 
+    cohort,
+    COUNT(user_pseudo_id)/COUNT(user_pseudo_id) as cohort_population,
+    ROUND(SUM(CASE WHEN end_date != cohort OR end_date IS NULL THEN 1 ELSE 0 END)/COUNT(user_pseudo_id),4) as week_0,
+    ROUND(IF (DATE_ADD(cohort, INTERVAL 1 WEEK)<'2021-02-07', SUM(CASE WHEN end_date > DATE_ADD(cohort, INTERVAL 1 WEEK) OR end_date IS NULL THEN 1 ELSE 0 END)/COUNT(user_pseudo_id), NULL),4) as week_1,
+    ROUND(IF (DATE_ADD(cohort, INTERVAL 2 WEEK)<'2021-02-07', SUM(CASE WHEN end_date > DATE_ADD(cohort, INTERVAL 2 WEEK) OR end_date IS NULL THEN 1 ELSE 0 END)/COUNT(user_pseudo_id), NULL),4) as week_2,
+    ROUND(IF (DATE_ADD(cohort, INTERVAL 3 WEEK)<'2021-02-07', SUM(CASE WHEN end_date > DATE_ADD(cohort, INTERVAL 3 WEEK) OR end_date IS NULL THEN 1 ELSE 0 END)/COUNT(user_pseudo_id), NULL),4) as week_3,
+    ROUND(IF (DATE_ADD(cohort, INTERVAL 4 WEEK)<'2021-02-07', SUM(CASE WHEN end_date > DATE_ADD(cohort, INTERVAL 4 WEEK) OR end_date IS NULL THEN 1 ELSE 0 END)/COUNT(user_pseudo_id), NULL),4) as week_4,
+    ROUND(IF (DATE_ADD(cohort, INTERVAL 5 WEEK)<'2021-02-07', SUM(CASE WHEN end_date > DATE_ADD(cohort, INTERVAL 5 WEEK) OR end_date IS NULL THEN 1 ELSE 0 END)/COUNT(user_pseudo_id), NULL),4) as week_5,
+    ROUND(IF (DATE_ADD(cohort, INTERVAL 6 WEEK)<'2021-02-07', SUM(CASE WHEN end_date > DATE_ADD(cohort, INTERVAL 6 WEEK) OR end_date IS NULL THEN 1 ELSE 0 END)/COUNT(user_pseudo_id), NULL),4) as week_6
+  FROM users__CTE
+  GROUP BY cohort;
