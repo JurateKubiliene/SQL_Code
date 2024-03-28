@@ -1,0 +1,125 @@
+WITH
+first_events AS (
+SELECT
+user_pseudo_id,
+event_name,
+MIN(event_timestamp) AS first_timestamp
+FROM
+`tc-da-1.turing_data_analytics.raw_events`
+WHERE
+Country IN ('United States',
+'India',
+'Canada')
+AND event_name IN ('session_start',
+'view_item',
+'add_to_cart',
+'add_payment_info',
+'add_shipping_info',
+'purchase')
+GROUP BY
+user_pseudo_id,
+event_name),
+top_3_funnels AS (
+SELECT
+raw_events.Country,
+raw_events.event_name,
+COUNT(raw_events.user_pseudo_id) AS users_in_funnel
+FROM
+`tc-da-1.turing_data_analytics.raw_events` raw_events
+INNER JOIN
+first_events
+ON
+first_events.user_pseudo_id = raw_events.user_pseudo_id
+AND first_events.event_name = raw_events.event_name
+AND first_events.first_timestamp = raw_events.event_timestamp
+GROUP BY
+Country,
+event_name),
+events_US AS (
+SELECT
+event_name,
+users_in_funnel AS US_events,
+ROUND(users_in_funnel/(
+SELECT
+users_in_funnel
+FROM
+top_3_funnels
+WHERE
+event_name = 'session_start'
+AND Country = 'United States'),4) AS US_perc_drop
+FROM
+top_3_funnels
+WHERE
+Country = 'United States'),
+events_India AS (
+SELECT
+event_name,
+users_in_funnel AS India_events,
+ROUND(users_in_funnel/(
+SELECT
+users_in_funnel
+FROM
+top_3_funnels
+WHERE
+event_name = 'session_start'
+AND Country = 'India'),4) AS India_perc_drop
+FROM
+top_3_funnels
+WHERE
+Country = 'India'),
+events_Canada AS (
+SELECT
+event_name,
+users_in_funnel AS Canada_events,
+ROUND(users_in_funnel/(
+SELECT
+users_in_funnel
+FROM
+top_3_funnels
+WHERE
+event_name = 'session_start'
+AND Country = 'Canada'),4) AS Canada_perc_drop
+FROM
+top_3_funnels
+WHERE
+Country = 'Canada'),
+full_perc_CTE AS (
+SELECT
+event_name,
+ROUND(COUNT(user_pseudo_id)/(
+SELECT
+COUNT(user_pseudo_id)
+FROM
+first_events
+WHERE
+event_name = 'session_start'),4) AS Full_perc
+FROM
+first_events
+GROUP BY
+event_name )
+SELECT
+RANK () OVER (ORDER BY events_US.US_events DESC) AS event_order,
+events_US.event_name,
+events_US.US_events,
+events_India.India_events,
+events_Canada.Canada_events,
+full_perc_CTE.Full_perc,
+events_US.US_perc_drop,
+events_India.India_perc_drop,
+events_Canada.Canada_perc_drop
+FROM
+events_US
+INNER JOIN
+events_Canada
+ON
+events_US.event_name = events_Canada.event_name
+INNER JOIN
+events_India
+ON
+events_US.event_name = events_India.event_name
+INNER JOIN
+full_perc_CTE
+ON
+events_US.event_name = full_perc_CTE.event_name
+ORDER BY
+US_events DESC;
